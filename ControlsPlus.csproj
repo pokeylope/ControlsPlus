@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>ControlsPlus</AssemblyName>
+    <RootNamespace>ControlsPlus</RootNamespace>
+    <Version>0.1.0</Version>
+    <Authors>James</Authors>
+    <Description>Add convenient, rebindable Stationeers controls for sensor lenses and tablets.</Description>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Deterministic>true</Deterministic>
+    <NoWarn>$(NoWarn);MSB3277</NoWarn>
+    <StationeersPath Condition="'$(StationeersPath)' == ''">D:\SteamLibrary\steamapps\common\Stationeers</StationeersPath>
+    <ManagedPath>$(StationeersPath)\rocketstation_Data\Managed</ManagedPath>
+    <BepInExCorePath>$(StationeersPath)\BepInEx\core</BepInExCorePath>
+    <LaunchPadPath>$(StationeersPath)\BepInEx\plugins\StationeersLaunchPad</LaunchPadPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="src\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp" HintPath="$(ManagedPath)\Assembly-CSharp.dll" Private="false" />
+    <Reference Include="BepInEx" HintPath="$(BepInExCorePath)\BepInEx.dll" Private="false" />
+    <Reference Include="StationeersMods.Interface" HintPath="$(LaunchPadPath)\StationeersMods.Interface.dll" Private="false" />
+    <Reference Include="UnityEngine" HintPath="$(ManagedPath)\UnityEngine.dll" Private="false" />
+    <Reference Include="UnityEngine.CoreModule" HintPath="$(ManagedPath)\UnityEngine.CoreModule.dll" Private="false" />
+    <Reference Include="UnityEngine.InputLegacyModule" HintPath="$(ManagedPath)\UnityEngine.InputLegacyModule.dll" Private="false" />
+  </ItemGroup>
+
+  <Target Name="CopyPluginToModRoot" AfterTargets="Build">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildProjectDirectory)" />
+    <Delete Files="$(TargetPath);$(IntermediateOutputPath)$(TargetFileName)" />
+  </Target>
+</Project>

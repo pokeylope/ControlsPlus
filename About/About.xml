@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetadata xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Name>Controls Plus</Name>
+  <ModID>com.james.controlsplus</ModID>
+  <Author>James</Author>
+  <Version>0.1.0</Version>
+  <Description>
+    This is a Plugin Mod.
+    It requires BepInEx with the StationeersLaunchPad plugin.
+    See: https://github.com/StationeersLaunchPad/StationeersLaunchPad
+
+    [h1]Controls Plus[/h1]
+    Adds two convenient, fully rebindable controls:
+
+    [list]
+    [*]Toggle worn sensor lenses on or off (default F7)
+    [*]Equip or stow the first normal or advanced tablet in your inventory (default F8)
+    [/list]
+
+    Both shortcuts appear under the Controls Plus group in the normal Controls settings.
+
+    Controls Plus is client-side. Dedicated servers and other players do not need to install it.
+
+    Source code and issue tracker:
+    [url=https://github.com/jameslkingsley/ControlsPlus]github.com/jameslkingsley/ControlsPlus[/url]
+  </Description>
+  <ChangeLog>
+    [h3]Version 0.1.0[/h3]
+    [list]
+    [*]Initial release
+    [*]Sensor-lenses on/off shortcut
+    [*]Tablet and Advanced Tablet equip/stow shortcut
+    [/list]
+  </ChangeLog>
+  <IsBetaProgramMod>false</IsBetaProgramMod>
+  <Tags>
+    <Tag>StationeersLaunchPad</Tag>
+  </Tags>
+  <InGameDescription><![CDATA[<size="30"><color=#ffa500>Controls Plus</color></size>
+
+Adds rebindable shortcuts for toggling sensor lenses and equipping or stowing normal and advanced tablets. This is a client-side mod.
+
+Defaults: F7 for sensor lenses and F8 for tablets. Rebind them under Controls Plus in the Controls settings.
+
+Source: https://github.com/jameslkingsley/ControlsPlus]]></InGameDescription>
+</ModMetadata>

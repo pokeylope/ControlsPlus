@@ -1,0 +1,78 @@
+name: Bug report
+description: Report reproducible Controls Plus behavior
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping improve Controls Plus. Please check for duplicate key assignments before reporting a shortcut conflict.
+
+  - type: input
+    id: stationeers-build
+    attributes:
+      label: Stationeers build
+      description: Copy the full build/version shown by the game or log.
+    validations:
+      required: true
+
+  - type: input
+    id: mod-versions
+    attributes:
+      label: Mod environment
+      description: Include Controls Plus, BepInEx, StationeersLaunchPad, and relevant shortcut or inventory mod versions.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Game environment
+      options:
+        - Single-player
+        - Listen-server client
+        - Dedicated-server client
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Equip...
+        2. Press...
+        3. Observe...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Paste the smallest useful Player.log or LaunchPad excerpt.
+      render: text
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Installation checks
+      options:
+        - label: Only one ControlsPlus.dll exists under enabled mod directories.
+          required: true
+        - label: The affected shortcut is assigned to a key in Settings → Controls → Controls Plus.
+          required: true
