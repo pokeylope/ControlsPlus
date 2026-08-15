@@ -2,11 +2,15 @@
 
 Controls Plus is a lightweight, client-side
 [StationeersLaunchPad](https://stationeerslaunchpad.github.io/) mod that adds
-two convenient controls to Stationeers:
+four convenient controls to Stationeers:
 
 - **Toggle Sensor Lenses** turns worn sensor lenses on or off. Default: `F7`.
 - **Toggle Tablet** equips a Tablet or Advanced Tablet from your inventory, or
   stows it when already held. Default: `F8`.
+- **Construct** equips the tools and materials required by the next construction
+  stage of the structure under the crosshair. Default: `F9`.
+- **Deconstruct** equips the tool required to remove the current construction
+  stage of the structure under the crosshair. Default: `F10`.
 
 Both shortcuts appear in the **Controls Plus** section of Stationeers' normal
 Controls settings and can be rebound like vanilla controls.
@@ -17,7 +21,7 @@ Controls settings and can be rebound like vanilla controls.
 - BepInEx 5.4.23.3
 - StationeersLaunchPad 0.5.0
 
-Version 0.1.0 targets the Stationeers build current on 14 August 2026. The mod
+Version 0.2.0 targets the Stationeers build current on 15 August 2026. The mod
 adds no items, recipes, prefabs, or save data.
 
 ## Installation
@@ -25,7 +29,8 @@ adds no items, recipes, prefabs, or save data.
 ### Steam Workshop
 
 1. Install BepInEx and StationeersLaunchPad.
-2. Subscribe to Controls Plus in the Steam Workshop.
+2. Subscribe to [Controls Plus](https://steamcommunity.com/sharedfiles/filedetails/?id=3783237133)
+   in the Steam Workshop.
 3. Enable the mod through LaunchPad and restart Stationeers.
 
 ### Manual release
@@ -55,6 +60,26 @@ tablet it finds. If both hands are occupied or no suitable inventory slot is
 available, Stationeers handles the action exactly like an unsuccessful Smart
 Stow operation.
 
+### Construct
+
+Aim at an incomplete structure and press the shortcut. Controls Plus reads the
+next vanilla or modded `BuildState` and equips its required item or pair of
+items into the active and off hand. For example, a stage requiring iron sheets
+and a welding torch equips both when suitable items are available.
+
+Compatible replacement tools are accepted through Stationeers' native
+construction checks. Required quantities must be present in a single usable
+stack. If any requirement is missing, a held item cannot be stowed, or the
+crosshair is not over a constructible structure, nothing is moved.
+
+### Deconstruct
+
+Aim at a structure and press the shortcut to equip the tool required to remove
+its current build stage. Missing tools and invalid targets are silent no-ops.
+
+Construct and Deconstruct only equip items; they never perform the actual
+construction or deconstruction interaction.
+
 The shortcuts do not fire while the game is paused, the console is open, or a
 text, prefab, or IC source-code input is active.
 
@@ -68,7 +93,8 @@ need the mod installed.
 
 Other shortcut or inventory mods can coexist with Controls Plus. Avoid assigning
 the same physical key to overlapping actions. In particular, shortcut suites
-that already provide glasses or tablet actions may duplicate these features.
+that already provide glasses, tablet, build, or unbuild actions may duplicate
+these features.
 
 ## Building
 

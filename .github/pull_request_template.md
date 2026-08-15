@@ -9,6 +9,8 @@ Describe the user-visible change and why it is needed.
 - [ ] Both controls appear and can be rebound under Controls Plus.
 - [ ] Sensor-lenses on/off behavior was tested.
 - [ ] Tablet and Advanced Tablet equip/stow behavior was tested.
+- [ ] Construct and Deconstruct were tested with one- and two-item stages,
+      missing requirements, and full hands/inventories.
 - [ ] Pause, text-entry, full-hand, and full-inventory edge cases were tested.
 - [ ] Multiplayer client behavior was tested, or the reason it was not is documented below.
 

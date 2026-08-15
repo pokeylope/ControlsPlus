@@ -49,7 +49,7 @@ if ($source -notmatch [regex]::Escape("public const string Version = `"$version`
     throw 'ControlsPlusMod.Version does not match the project version.'
 }
 
-foreach ($label in 'Toggle Sensor Lenses', 'Toggle Tablet') {
+foreach ($label in 'Toggle Sensor Lenses', 'Toggle Tablet', 'Construct', 'Deconstruct') {
     if ($source -notmatch [regex]::Escape("`"$label`"")) {
         throw "Missing control label: $label"
     }

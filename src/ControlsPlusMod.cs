@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using Assets.Scripts;
@@ -18,11 +19,13 @@ public sealed class ControlsPlusMod : ModBehaviour
 {
     public const string ModId = "com.james.controlsplus";
     public const string DisplayName = "Controls Plus";
-    public const string Version = "0.1.0";
+    public const string Version = "0.2.4";
 
     private const string ControlsGroupName = "Controls Plus";
     private const string SensorLensesControl = "Toggle Sensor Lenses";
     private const string TabletControl = "Toggle Tablet";
+    private const string ConstructControl = "Construct";
+    private const string DeconstructControl = "Deconstruct";
 
     private static readonly MethodInfo AddKeyMethod = typeof(KeyManager).GetMethod(
         "AddKey",
@@ -33,6 +36,9 @@ public sealed class ControlsPlusMod : ModBehaviour
 
     private KeyCode _sensorLensesKey = KeyCode.F7;
     private KeyCode _tabletKey = KeyCode.F8;
+    private KeyCode _constructKey = KeyCode.F9;
+    private KeyCode _deconstructKey = KeyCode.F10;
+    private Coroutine _equipmentRoutine;
 
     public override void OnLoaded(ContentHandler contentHandler)
     {
@@ -43,7 +49,9 @@ public sealed class ControlsPlusMod : ModBehaviour
             RegisterControls();
             KeyManager.OnControlsChanged += RefreshBindings;
             RefreshBindings();
-            LogMessage($"Loaded. Sensor lenses: {_sensorLensesKey}; tablet: {_tabletKey}.");
+            LogMessage(
+                $"Loaded. Sensor lenses: {_sensorLensesKey}; tablet: {_tabletKey}; " +
+                $"construct: {_constructKey}; deconstruct: {_deconstructKey}.");
         }
         catch (Exception exception)
         {
@@ -66,6 +74,16 @@ public sealed class ControlsPlusMod : ModBehaviour
         if (_tabletKey != KeyCode.None && KeyManager.GetButtonDown(_tabletKey))
         {
             ToggleTablet();
+        }
+
+        if (_constructKey != KeyCode.None && KeyManager.GetButtonDown(_constructKey))
+        {
+            EquipConstructionRequirements(false);
+        }
+
+        if (_deconstructKey != KeyCode.None && KeyManager.GetButtonDown(_deconstructKey))
+        {
+            EquipConstructionRequirements(true);
         }
     }
 
@@ -90,6 +108,8 @@ public sealed class ControlsPlusMod : ModBehaviour
 
         AddControlIfMissing(SensorLensesControl, KeyCode.F7, group);
         AddControlIfMissing(TabletControl, KeyCode.F8, group);
+        AddControlIfMissing(ConstructControl, KeyCode.F9, group);
+        AddControlIfMissing(DeconstructControl, KeyCode.F10, group);
         ControlsAssignment.RefreshState();
     }
 
@@ -105,6 +125,8 @@ public sealed class ControlsPlusMod : ModBehaviour
     {
         _sensorLensesKey = KeyManager.GetKey(SensorLensesControl);
         _tabletKey = KeyManager.GetKey(TabletControl);
+        _constructKey = KeyManager.GetKey(ConstructControl);
+        _deconstructKey = KeyManager.GetKey(DeconstructControl);
     }
 
     private static bool ControlsShouldFunction()
@@ -183,6 +205,609 @@ public sealed class ControlsPlusMod : ModBehaviour
         return null;
     }
 
+    private void EquipConstructionRequirements(bool deconstruct)
+    {
+        if (_equipmentRoutine != null)
+        {
+            return;
+        }
+
+        Structure structure = FindLookedAtStructure();
+        ToolUse toolUse = deconstruct
+            ? structure?.CurrentBuildState?.Tool
+            : structure?.NextBuildState?.Tool;
+        if (toolUse == null)
+        {
+            return;
+        }
+
+        List<EquipmentRequirement> requirements = deconstruct
+            ? GetDeconstructionRequirements(toolUse)
+            : GetConstructionRequirements(toolUse);
+        EquipmentPlan plan = CreateEquipmentPlan(
+            InventoryManager.ParentHuman,
+            requirements,
+            out string failureReason);
+        if (plan == null)
+        {
+            LogMessage(
+                $"{(deconstruct ? "Deconstruct" : "Construct")} no-op for " +
+                $"{structure.PrefabName} at build state {structure.CurrentBuildStateIndex}: " +
+                failureReason);
+            return;
+        }
+
+        if (plan.Steps.Count == 0)
+        {
+            return;
+        }
+
+        _equipmentRoutine = StartCoroutine(ExecuteEquipmentPlan(plan));
+    }
+
+    private static Structure FindLookedAtStructure()
+    {
+        // Use the game's resolved interaction target. Some structures swap to
+        // colliders that are not directly registered with Thing.Find at lower
+        // build states, while CursorManager has already resolved their owner.
+        return CursorManager.CursorThing?.AsStructure;
+    }
+
+    private static List<EquipmentRequirement> GetConstructionRequirements(ToolUse toolUse)
+    {
+        List<EquipmentRequirement> requirements = new List<EquipmentRequirement>(2);
+        if (toolUse.ToolEntry != null)
+        {
+            requirements.Add(new EquipmentRequirement(
+                item => toolUse.IsToolEntry(item),
+                Math.Max(1, toolUse.EntryQuantity)));
+        }
+
+        if (toolUse.ToolEntry2 != null)
+        {
+            requirements.Add(new EquipmentRequirement(
+                item => toolUse.IsToolEntry2(item),
+                Math.Max(1, toolUse.EntryQuantity2)));
+        }
+
+        return requirements;
+    }
+
+    private static List<EquipmentRequirement> GetDeconstructionRequirements(ToolUse toolUse)
+    {
+        List<EquipmentRequirement> requirements = new List<EquipmentRequirement>(1);
+        if (toolUse.ToolExit != null)
+        {
+            requirements.Add(new EquipmentRequirement(
+                item => toolUse.IsToolExit(item),
+                Math.Max(1, toolUse.ExitQuantity)));
+        }
+
+        return requirements;
+    }
+
+    private static EquipmentPlan CreateEquipmentPlan(
+        Human player,
+        IReadOnlyList<EquipmentRequirement> requirements,
+        out string failureReason)
+    {
+        failureReason = string.Empty;
+        if (player == null || requirements == null || requirements.Count == 0 || requirements.Count > 2)
+        {
+            failureReason = "the build state has no supported equipment requirements";
+            return null;
+        }
+
+        Slot primaryHand = InventoryManager.ActiveHandSlot ?? player.LeftHandSlot;
+        Slot secondaryHand = ReferenceEquals(primaryHand, player.LeftHandSlot)
+            ? player.RightHandSlot
+            : player.LeftHandSlot;
+        if (primaryHand == null || (requirements.Count > 1 && secondaryHand == null))
+        {
+            failureReason = "the required player hand is unavailable";
+            return null;
+        }
+
+        List<Slot> allSlots = new List<Slot>(EnumerateSlots(player, new HashSet<long>()));
+        Slot[] targetHands = requirements.Count == 1
+            ? new[] { primaryHand }
+            : new[] { primaryHand, secondaryHand };
+        Item[] selectedItems = new Item[requirements.Count];
+        HashSet<long> selectedIds = new HashSet<long>();
+
+        for (int index = 0; index < requirements.Count; index++)
+        {
+            selectedItems[index] = FindRequirementItem(
+                requirements[index],
+                targetHands[index],
+                primaryHand,
+                secondaryHand,
+                allSlots,
+                selectedIds);
+            if (selectedItems[index] == null)
+            {
+                failureReason = $"no accessible inventory item matches requirement {index + 1}";
+                return null;
+            }
+
+            selectedIds.Add(selectedItems[index].ReferenceId);
+        }
+
+        EquipmentPlan plan = FindEquipmentPlan(
+            targetHands,
+            selectedItems,
+            allSlots,
+            new[] { primaryHand, secondaryHand });
+        if (plan == null)
+        {
+            failureReason = "no compatible move or swap route could equip the selected items";
+        }
+
+        return plan;
+    }
+
+    private static Item FindRequirementItem(
+        EquipmentRequirement requirement,
+        Slot preferredHand,
+        Slot primaryHand,
+        Slot secondaryHand,
+        IEnumerable<Slot> allSlots,
+        HashSet<long> excludedIds)
+    {
+        Item preferred = preferredHand?.Get<Item>();
+        if (IsRequirementCandidate(preferred, requirement, excludedIds))
+        {
+            return preferred;
+        }
+
+        Slot otherHand = ReferenceEquals(preferredHand, primaryHand) ? secondaryHand : primaryHand;
+        Item other = otherHand?.Get<Item>();
+        if (IsRequirementCandidate(other, requirement, excludedIds))
+        {
+            return other;
+        }
+
+        foreach (Slot slot in allSlots)
+        {
+            Item candidate = slot?.Get<Item>();
+            if (IsRequirementCandidate(candidate, requirement, excludedIds))
+            {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsRequirementCandidate(
+        Item item,
+        EquipmentRequirement requirement,
+        HashSet<long> excludedIds)
+    {
+        if (item == null ||
+            excludedIds.Contains(item.ReferenceId) ||
+            item.IsBeingDestroyed ||
+            item.IsBeingDragged ||
+            (item is Stackable && item.GetQuantity < requirement.Quantity))
+        {
+            return false;
+        }
+
+        try
+        {
+            return requirement.Matches(item);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    private static EquipmentPlan FindEquipmentPlan(
+        IReadOnlyList<Slot> targetHands,
+        IReadOnlyList<Item> selectedItems,
+        IReadOnlyList<Slot> allSlots,
+        IReadOnlyList<Slot> availableHands)
+    {
+        List<Slot> trackedSlots = new List<Slot>();
+        AddDistinctSlots(trackedSlots, availableHands);
+        foreach (Item selectedItem in selectedItems)
+        {
+            AddDistinctSlot(trackedSlots, selectedItem.ParentSlot);
+        }
+
+        // Empty slots are useful escape valves, but selected-item source slots
+        // are tracked even when occupied so a direct swap can work with a full
+        // inventory.
+        foreach (Slot slot in allSlots)
+        {
+            if (slot?.Get() == null)
+            {
+                AddDistinctSlot(trackedSlots, slot);
+            }
+        }
+
+        List<Item> trackedItems = new List<Item>();
+        foreach (Slot slot in trackedSlots)
+        {
+            AddDistinctItem(trackedItems, slot.Get<Item>());
+        }
+
+        int[] initialState = new int[trackedSlots.Count];
+        for (int slotIndex = 0; slotIndex < trackedSlots.Count; slotIndex++)
+        {
+            initialState[slotIndex] = IndexOfItem(trackedItems, trackedSlots[slotIndex].Get<Item>());
+        }
+
+        int[] targetSlotIndexes = new int[targetHands.Count];
+        int[] desiredItemIndexes = new int[selectedItems.Count];
+        for (int index = 0; index < targetHands.Count; index++)
+        {
+            targetSlotIndexes[index] = IndexOfSlot(trackedSlots, targetHands[index]);
+            desiredItemIndexes[index] = IndexOfItem(trackedItems, selectedItems[index]);
+        }
+
+        int[] availableHandIndexes = new int[availableHands.Count];
+        for (int index = 0; index < availableHands.Count; index++)
+        {
+            availableHandIndexes[index] = IndexOfSlot(trackedSlots, availableHands[index]);
+        }
+
+        List<PlannedSlotOperation> operations = new List<PlannedSlotOperation>();
+        HashSet<string> visited = new HashSet<string>();
+        if (!SearchEquipmentPlan(
+                initialState,
+                trackedSlots,
+                trackedItems,
+                targetSlotIndexes,
+                desiredItemIndexes,
+                availableHandIndexes,
+                operations,
+                visited,
+                0))
+        {
+            return null;
+        }
+
+        EquipmentPlan plan = new EquipmentPlan();
+        int[] replayState = (int[])initialState.Clone();
+        foreach (PlannedSlotOperation operation in operations)
+        {
+            int sourceItemIndex = replayState[operation.SourceIndex];
+            int destinationItemIndex = replayState[operation.DestinationIndex];
+            Slot sourceSlot = trackedSlots[operation.SourceIndex];
+            Slot destinationSlot = trackedSlots[operation.DestinationIndex];
+
+            if (destinationItemIndex < 0)
+            {
+                plan.Steps.Add(MoveStep.Move(trackedItems[sourceItemIndex], destinationSlot));
+            }
+            else
+            {
+                // After the swap, the old destination occupant is in source,
+                // and the old source occupant is in destination.
+                plan.Steps.Add(MoveStep.Swap(
+                    sourceSlot,
+                    destinationSlot,
+                    trackedItems[destinationItemIndex],
+                    trackedItems[sourceItemIndex]));
+            }
+
+            replayState[operation.SourceIndex] = destinationItemIndex;
+            replayState[operation.DestinationIndex] = sourceItemIndex;
+        }
+
+        return plan;
+    }
+
+    private static bool SearchEquipmentPlan(
+        int[] state,
+        IReadOnlyList<Slot> slots,
+        IReadOnlyList<Item> items,
+        IReadOnlyList<int> targetSlotIndexes,
+        IReadOnlyList<int> desiredItemIndexes,
+        IReadOnlyList<int> availableHandIndexes,
+        List<PlannedSlotOperation> operations,
+        HashSet<string> visited,
+        int depth)
+    {
+        if (EquipmentGoalReached(state, targetSlotIndexes, desiredItemIndexes))
+        {
+            return true;
+        }
+
+        if (depth >= 6 || !visited.Add(string.Join(",", state)))
+        {
+            return false;
+        }
+
+        List<PlannedSlotOperation> candidates = new List<PlannedSlotOperation>();
+
+        // Try goal-producing moves and swaps first.
+        for (int goalIndex = 0; goalIndex < targetSlotIndexes.Count; goalIndex++)
+        {
+            int targetIndex = targetSlotIndexes[goalIndex];
+            int desiredIndex = desiredItemIndexes[goalIndex];
+            if (state[targetIndex] == desiredIndex)
+            {
+                continue;
+            }
+
+            int sourceIndex = Array.IndexOf(state, desiredIndex);
+            AddOperationIfValid(candidates, state, slots, items, sourceIndex, targetIndex);
+
+            // A spare hand can bridge an otherwise incompatible swap, such as
+            // moving a sheet out of the active hand while replacing a tool in
+            // a tool-belt-only slot.
+            foreach (int handIndex in availableHandIndexes)
+            {
+                AddOperationIfValid(candidates, state, slots, items, sourceIndex, handIndex);
+            }
+        }
+
+        // If a direct swap is incompatible, temporarily move a hand occupant
+        // into any compatible empty slot and retry on the next search level.
+        foreach (int targetIndex in targetSlotIndexes)
+        {
+            if (state[targetIndex] < 0)
+            {
+                continue;
+            }
+
+            for (int destinationIndex = 0; destinationIndex < slots.Count; destinationIndex++)
+            {
+                if (state[destinationIndex] < 0)
+                {
+                    AddOperationIfValid(
+                        candidates,
+                        state,
+                        slots,
+                        items,
+                        targetIndex,
+                        destinationIndex);
+                }
+            }
+        }
+
+        foreach (PlannedSlotOperation candidate in candidates)
+        {
+            int[] nextState = (int[])state.Clone();
+            int displaced = nextState[candidate.DestinationIndex];
+            nextState[candidate.DestinationIndex] = nextState[candidate.SourceIndex];
+            nextState[candidate.SourceIndex] = displaced;
+            operations.Add(candidate);
+
+            if (SearchEquipmentPlan(
+                    nextState,
+                    slots,
+                    items,
+                    targetSlotIndexes,
+                    desiredItemIndexes,
+                    availableHandIndexes,
+                    operations,
+                    visited,
+                    depth + 1))
+            {
+                return true;
+            }
+
+            operations.RemoveAt(operations.Count - 1);
+        }
+
+        return false;
+    }
+
+    private static void AddOperationIfValid(
+        ICollection<PlannedSlotOperation> operations,
+        IReadOnlyList<int> state,
+        IReadOnlyList<Slot> slots,
+        IReadOnlyList<Item> items,
+        int sourceIndex,
+        int destinationIndex)
+    {
+        if (sourceIndex < 0 || destinationIndex < 0 || sourceIndex == destinationIndex)
+        {
+            return;
+        }
+
+        int sourceItemIndex = state[sourceIndex];
+        int destinationItemIndex = state[destinationIndex];
+        if (sourceItemIndex < 0 || !CanMoveTo(items[sourceItemIndex], slots[destinationIndex]))
+        {
+            return;
+        }
+
+        if (destinationItemIndex >= 0 && !CanMoveTo(items[destinationItemIndex], slots[sourceIndex]))
+        {
+            return;
+        }
+
+        foreach (PlannedSlotOperation existing in operations)
+        {
+            if (existing.SourceIndex == sourceIndex && existing.DestinationIndex == destinationIndex)
+            {
+                return;
+            }
+        }
+
+        operations.Add(new PlannedSlotOperation(sourceIndex, destinationIndex));
+    }
+
+    private static bool CanMoveTo(Item item, Slot slot)
+    {
+        try
+        {
+            // Slot.AllowMove also requires the live destination to be empty,
+            // which is incorrect while evaluating a simulated swap. Check the
+            // invariant compatibility rules here; occupancy is represented by
+            // the planner's state and executed later via MoveToSlot/SwapSlots.
+            return item != null &&
+                   slot != null &&
+                   !slot.IsLocked &&
+                   item.CanEnter(slot) &&
+                   slot.IsAllowedType(item);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    private static bool EquipmentGoalReached(
+        IReadOnlyList<int> state,
+        IReadOnlyList<int> targetSlotIndexes,
+        IReadOnlyList<int> desiredItemIndexes)
+    {
+        for (int index = 0; index < targetSlotIndexes.Count; index++)
+        {
+            if (state[targetSlotIndexes[index]] != desiredItemIndexes[index])
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static void AddDistinctSlots(List<Slot> destination, IEnumerable<Slot> slots)
+    {
+        foreach (Slot slot in slots)
+        {
+            AddDistinctSlot(destination, slot);
+        }
+    }
+
+    private static void AddDistinctSlot(List<Slot> destination, Slot slot)
+    {
+        if (slot != null && IndexOfSlot(destination, slot) < 0)
+        {
+            destination.Add(slot);
+        }
+    }
+
+    private static int IndexOfSlot(IReadOnlyList<Slot> slots, Slot target)
+    {
+        for (int index = 0; index < slots.Count; index++)
+        {
+            if (ReferenceEquals(slots[index], target))
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
+    private static void AddDistinctItem(List<Item> destination, Item item)
+    {
+        if (item != null && IndexOfItem(destination, item) < 0)
+        {
+            destination.Add(item);
+        }
+    }
+
+    private static int IndexOfItem(IReadOnlyList<Item> items, Item target)
+    {
+        if (target == null)
+        {
+            return -1;
+        }
+
+        for (int index = 0; index < items.Count; index++)
+        {
+            if (items[index]?.ReferenceId == target.ReferenceId)
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
+    private IEnumerator ExecuteEquipmentPlan(EquipmentPlan plan)
+    {
+        foreach (MoveStep step in plan.Steps)
+        {
+            if (step.IsSwap)
+            {
+                if (!TrySwap(step.FirstSlot, step.SecondSlot))
+                {
+                    _equipmentRoutine = null;
+                    yield break;
+                }
+
+                float swapDeadline = Time.realtimeSinceStartup + 1.5f;
+                while ((!ReferenceEquals(step.FirstExpected.ParentSlot, step.FirstSlot) ||
+                        !ReferenceEquals(step.SecondExpected.ParentSlot, step.SecondSlot)) &&
+                       Time.realtimeSinceStartup < swapDeadline)
+                {
+                    yield return null;
+                }
+
+                if (!ReferenceEquals(step.FirstExpected.ParentSlot, step.FirstSlot) ||
+                    !ReferenceEquals(step.SecondExpected.ParentSlot, step.SecondSlot))
+                {
+                    _equipmentRoutine = null;
+                    yield break;
+                }
+
+                continue;
+            }
+
+            if (ReferenceEquals(step.Item.ParentSlot, step.TargetSlot))
+            {
+                continue;
+            }
+
+            if (step.TargetSlot.Get() != null || !TryMove(step.Item, step.TargetSlot))
+            {
+                _equipmentRoutine = null;
+                yield break;
+            }
+
+            float moveDeadline = Time.realtimeSinceStartup + 1.5f;
+            while (!ReferenceEquals(step.Item.ParentSlot, step.TargetSlot) &&
+                   Time.realtimeSinceStartup < moveDeadline)
+            {
+                yield return null;
+            }
+
+            if (!ReferenceEquals(step.Item.ParentSlot, step.TargetSlot))
+            {
+                _equipmentRoutine = null;
+                yield break;
+            }
+        }
+
+        _equipmentRoutine = null;
+    }
+
+    private static bool TryMove(DynamicThing item, Slot target)
+    {
+        try
+        {
+            OnServer.MoveToSlot(item, target);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    private static bool TrySwap(Slot first, Slot second)
+    {
+        try
+        {
+            OnServer.SwapSlots(first, second);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
     private static IEnumerable<Slot> EnumerateSlots(Thing thing, HashSet<long> visited)
     {
         if (thing == null || !visited.Add(thing.ReferenceId) || thing.Slots == null)
@@ -220,5 +845,82 @@ public sealed class ControlsPlusMod : ModBehaviour
     private static void LogException(string message, Exception exception)
     {
         Debug.unityLogger.Log(LogType.Error, $"[Controls Plus] {message}: {exception}");
+    }
+
+    private sealed class EquipmentRequirement
+    {
+        public EquipmentRequirement(Func<Item, bool> matches, int quantity)
+        {
+            Matches = matches;
+            Quantity = quantity;
+        }
+
+        public Func<Item, bool> Matches { get; }
+
+        public int Quantity { get; }
+    }
+
+    private sealed class EquipmentPlan
+    {
+        public List<MoveStep> Steps { get; } = new List<MoveStep>();
+    }
+
+    private sealed class PlannedSlotOperation
+    {
+        public PlannedSlotOperation(int sourceIndex, int destinationIndex)
+        {
+            SourceIndex = sourceIndex;
+            DestinationIndex = destinationIndex;
+        }
+
+        public int SourceIndex { get; }
+
+        public int DestinationIndex { get; }
+    }
+
+    private sealed class MoveStep
+    {
+        private MoveStep()
+        {
+        }
+
+        public bool IsSwap { get; private set; }
+
+        public DynamicThing Item { get; private set; }
+
+        public Slot TargetSlot { get; private set; }
+
+        public Slot FirstSlot { get; private set; }
+
+        public Slot SecondSlot { get; private set; }
+
+        public DynamicThing FirstExpected { get; private set; }
+
+        public DynamicThing SecondExpected { get; private set; }
+
+        public static MoveStep Move(DynamicThing item, Slot target)
+        {
+            return new MoveStep
+            {
+                Item = item,
+                TargetSlot = target
+            };
+        }
+
+        public static MoveStep Swap(
+            Slot first,
+            Slot second,
+            DynamicThing firstExpected,
+            DynamicThing secondExpected)
+        {
+            return new MoveStep
+            {
+                IsSwap = true,
+                FirstSlot = first,
+                SecondSlot = second,
+                FirstExpected = firstExpected,
+                SecondExpected = secondExpected
+            };
+        }
     }
 }

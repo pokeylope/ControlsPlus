@@ -3,18 +3,20 @@
   <Name>Controls Plus</Name>
   <ModID>com.james.controlsplus</ModID>
   <Author>James</Author>
-  <Version>0.1.0</Version>
+  <Version>0.2.4</Version>
   <Description>
     This is a Plugin Mod.
     It requires BepInEx with the StationeersLaunchPad plugin.
     See: https://github.com/StationeersLaunchPad/StationeersLaunchPad
 
     [h1]Controls Plus[/h1]
-    Adds two convenient, fully rebindable controls:
+    Adds four convenient, fully rebindable controls:
 
     [list]
     [*]Toggle worn sensor lenses on or off (default F7)
     [*]Equip or stow the first normal or advanced tablet in your inventory (default F8)
+    [*]Equip the tools and materials needed for the next construction stage (default F9)
+    [*]Equip the tool needed to deconstruct the current construction stage (default F10)
     [/list]
 
     Both shortcuts appear under the Controls Plus group in the normal Controls settings.
@@ -25,6 +27,38 @@
     [url=https://github.com/jameslkingsley/ControlsPlus]github.com/jameslkingsley/ControlsPlus[/url]
   </Description>
   <ChangeLog>
+    [h3]Version 0.2.4[/h3]
+    [list]
+    [*]Fixed construction when a required material is already held in the active hand
+    [*]Hand arrangement now follows the construction requirements regardless of which hand is active
+    [/list]
+
+    [h3]Version 0.2.3[/h3]
+    [list]
+    [*]Fixed deconstruction tools being rejected when their durability or charge usage exceeded one
+    [*]Stack quantity checks now apply only to consumable construction materials
+    [/list]
+
+    [h3]Version 0.2.2[/h3]
+    [list]
+    [*]Fixed Construct and Deconstruct shortcuts when the player inventory has no empty stow slot
+    [*]Tools and held items can now swap directly between hands and compatible inventory slots
+    [/list]
+
+    [h3]Version 0.2.1[/h3]
+    [list]
+    [*]Fixed Construct and Deconstruct targeting for structures whose colliders change between build states
+    [*]Fixed shortcuts on initial iron frames and affected devices such as IC Housings and Electronics Printers
+    [/list]
+
+    [h3]Version 0.2.0[/h3]
+    [list]
+    [*]Construct shortcut for equipping the next stage's tools and materials
+    [*]Deconstruct shortcut for equipping the current stage's removal tool
+    [*]Silent preflight when requirements are missing or held items cannot be stowed
+    [*]Compatible replacement tools and nested player inventories are supported
+    [/list]
+
     [h3]Version 0.1.0[/h3]
     [list]
     [*]Initial release
@@ -32,15 +66,16 @@
     [*]Tablet and Advanced Tablet equip/stow shortcut
     [/list]
   </ChangeLog>
+  <WorkshopHandle>3783237133</WorkshopHandle>
   <IsBetaProgramMod>false</IsBetaProgramMod>
   <Tags>
     <Tag>StationeersLaunchPad</Tag>
   </Tags>
   <InGameDescription><![CDATA[<size="30"><color=#ffa500>Controls Plus</color></size>
 
-Adds rebindable shortcuts for toggling sensor lenses and equipping or stowing normal and advanced tablets. This is a client-side mod.
+Adds rebindable shortcuts for sensor lenses, tablets, construction, and deconstruction. This is a client-side mod.
 
-Defaults: F7 for sensor lenses and F8 for tablets. Rebind them under Controls Plus in the Controls settings.
+Defaults: F7 sensor lenses, F8 tablet, F9 construct, and F10 deconstruct. Rebind them under Controls Plus in the Controls settings.
 
 Source: https://github.com/jameslkingsley/ControlsPlus]]></InGameDescription>
 </ModMetadata>

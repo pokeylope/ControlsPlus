@@ -21,6 +21,8 @@ not be committed.
 - Confirm both controls appear and can be rebound in the Controls Plus group.
 - Test sensor lenses in their on and off states and with no lenses equipped.
 - Test normal and Advanced Tablets in each hand and in nested inventories.
+- Test one- and two-item construction stages, compatible replacement tools,
+  deconstruction tools, incomplete stacks, and missing requirements.
 - Test full hands, full inventories, pause, console, text input, and IC editing.
 - Test on a multiplayer client connected to a listen or dedicated server.
 

@@ -3,9 +3,9 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>ControlsPlus</AssemblyName>
     <RootNamespace>ControlsPlus</RootNamespace>
-    <Version>0.1.0</Version>
+    <Version>0.2.4</Version>
     <Authors>James</Authors>
-    <Description>Add convenient, rebindable Stationeers controls for sensor lenses and tablets.</Description>
+    <Description>Add convenient, rebindable Stationeers controls for sensor lenses, tablets, construction, and deconstruction.</Description>
     <LangVersion>12.0</LangVersion>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
