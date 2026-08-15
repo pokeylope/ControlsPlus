@@ -3,7 +3,7 @@
   <Name>Controls Plus</Name>
   <ModID>com.james.controlsplus</ModID>
   <Author>James</Author>
-  <Version>0.2.4</Version>
+  <Version>0.4.0</Version>
   <Description>
     This is a Plugin Mod.
     It requires BepInEx with the StationeersLaunchPad plugin.
@@ -19,7 +19,18 @@
     [*]Equip the tool needed to deconstruct the current construction stage (default F10)
     [/list]
 
-    Both shortcuts appear under the Controls Plus group in the normal Controls settings.
+    All four shortcuts appear under the Controls Plus group in the normal Controls settings.
+
+    Controls Plus also enhances the game's Smart Stow action. Held items return to
+    the inventory slot they came from when that slot is still available. Stackable
+    items otherwise merge into matching stacks with the same prefab and colour,
+    including across multiple partially filled stacks, before using the normal
+    Smart Stow fallback.
+
+    Item hotkeys let you bind exact inventory items to the number row. Activate
+    cursor control, hover an item, and press 1-0 to assign it. Press that number
+    during normal play to toggle the item between a hand and the inventory slot
+    it came from.
 
     Controls Plus is client-side. Dedicated servers and other players do not need to install it.
 
@@ -27,6 +38,23 @@
     [url=https://github.com/jameslkingsley/ControlsPlus]github.com/jameslkingsley/ControlsPlus[/url]
   </Description>
   <ChangeLog>
+    [h3]Version 0.4.0[/h3]
+    [list]
+    [*]Added assignable item hotkeys for the number row
+    [*]Hover an inventory item in cursor-control mode and press 1-0 to bind it
+    [*]Press a bound number during normal play to equip or stow that exact item
+    [*]When both hands are occupied, the replaced hand item is temporarily stowed and restored afterward
+    [*]Item bindings persist locally for each world and character
+    [/list]
+
+    [h3]Version 0.3.0[/h3]
+    [list]
+    [*]Enhanced Smart Stow returns held items to their original inventory slot when possible
+    [*]Stackable items merge into matching prefab-and-colour stacks
+    [*]Merging can fill multiple partial stacks before normal Smart Stow handles any remainder
+    [*]Single-item construction stages now prefer a free hand and preserve the other held item
+    [/list]
+
     [h3]Version 0.2.4[/h3]
     [list]
     [*]Fixed construction when a required material is already held in the active hand
@@ -73,9 +101,13 @@
   </Tags>
   <InGameDescription><![CDATA[<size="30"><color=#ffa500>Controls Plus</color></size>
 
-Adds rebindable shortcuts for sensor lenses, tablets, construction, and deconstruction. This is a client-side mod.
+Adds rebindable shortcuts, enhanced Smart Stow, and number-row item hotkeys. This is a client-side mod.
 
 Defaults: F7 sensor lenses, F8 tablet, F9 construct, and F10 deconstruct. Rebind them under Controls Plus in the Controls settings.
+
+Smart Stow returns items to their original slot when possible and combines stackable items only when their prefab and colour match.
+
+For item hotkeys, activate cursor control, hover an inventory item, and press 1-0. Press the assigned number during normal play to equip or stow it.
 
 Source: https://github.com/jameslkingsley/ControlsPlus]]></InGameDescription>
 </ModMetadata>

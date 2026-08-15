@@ -7,6 +7,44 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## Unreleased
 
+## 0.4.0 - 2026-08-15
+
+### Added
+
+- Exact inventory items can be assigned to number-row hotkeys `1` through `0`
+  by hovering their tile while cursor control is active.
+- Pressing a bound number during normal play toggles that item between a usable
+  hand and its remembered inventory slot.
+- When both hands are occupied, Controls Plus temporarily stows one held item,
+  equips the bound item, and restores the displaced item when the same hotkey is
+  pressed again. Temporary stowing preserves the exact item rather than merging
+  it into another stack.
+- Assigning a number to a new item replaces its previous binding; assigning the
+  same number to the same item clears it.
+- Bindings persist locally per world and character using Stationeers' stable
+  world and item reference IDs.
+
+### Changed
+
+- A number with an item assigned takes priority over the vanilla equipment-slot
+  shortcut using that number. Unassigned numbers retain vanilla behavior.
+
+## 0.3.0 - 2026-08-15
+
+### Added
+
+- Smart Stow remembers the inventory slot from which an item was equipped and
+  returns the item there when that slot remains available.
+- Stackable items can merge across multiple partial stacks when prefab and
+  colour both match.
+- Any remainder is passed to Stationeers' normal Smart Stow behavior.
+- Native server-routed move and merge operations preserve multiplayer support.
+
+### Changed
+
+- Single-item construction stages prefer an already-empty hand, preserving an
+  unrelated item held in the other hand.
+
 ## 0.2.4 - 2026-08-15
 
 ### Fixed

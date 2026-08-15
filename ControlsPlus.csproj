@@ -3,9 +3,9 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>ControlsPlus</AssemblyName>
     <RootNamespace>ControlsPlus</RootNamespace>
-    <Version>0.2.4</Version>
+    <Version>0.4.0</Version>
     <Authors>James</Authors>
-    <Description>Add convenient, rebindable Stationeers controls for sensor lenses, tablets, construction, and deconstruction.</Description>
+    <Description>Add convenient, rebindable Stationeers controls and a more thoughtful Smart Stow.</Description>
     <LangVersion>12.0</LangVersion>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
@@ -25,10 +25,12 @@
   <ItemGroup>
     <Reference Include="Assembly-CSharp" HintPath="$(ManagedPath)\Assembly-CSharp.dll" Private="false" />
     <Reference Include="BepInEx" HintPath="$(BepInExCorePath)\BepInEx.dll" Private="false" />
+    <Reference Include="0Harmony" HintPath="$(BepInExCorePath)\0Harmony.dll" Private="false" />
     <Reference Include="StationeersMods.Interface" HintPath="$(LaunchPadPath)\StationeersMods.Interface.dll" Private="false" />
     <Reference Include="UnityEngine" HintPath="$(ManagedPath)\UnityEngine.dll" Private="false" />
     <Reference Include="UnityEngine.CoreModule" HintPath="$(ManagedPath)\UnityEngine.CoreModule.dll" Private="false" />
     <Reference Include="UnityEngine.InputLegacyModule" HintPath="$(ManagedPath)\UnityEngine.InputLegacyModule.dll" Private="false" />
+    <Reference Include="UnityEngine.PhysicsModule" HintPath="$(ManagedPath)\UnityEngine.PhysicsModule.dll" Private="false" />
   </ItemGroup>
 
   <Target Name="CopyPluginToModRoot" AfterTargets="Build">
